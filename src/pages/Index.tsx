@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,21 +17,27 @@ import {
   Calendar, 
   TrendingUp,
   Lightbulb,
-  Settings
+  Settings,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import SensorCard from '../components/SensorCard';
 import AutomationControls from '../components/AutomationControls';
 import GuidanceDashboard from '../components/GuidanceDashboard';
 import AlertsPanel from '../components/AlertsPanel';
+import { useDemoSensorData } from '../hooks/useDemoSensorData';
 
 const Index = () => {
-  const [sensorData, setSensorData] = useState({
-    temperature: 24.5,
-    humidity: 65,
-    soilMoisture: 78,
-    lightLevel: 85,
-    pestDetection: 'Low'
-  });
+  const { 
+    sensorData, 
+    isConnected, 
+    lastUpdated,
+    temperature,
+    humidity,
+    soilMoisture,
+    lightLevel,
+    pestDetection
+  } = useDemoSensorData(3000); // Update every 3 seconds
 
   const [automationStatus, setAutomationStatus] = useState({
     irrigation: true,
@@ -40,20 +46,14 @@ const Index = () => {
     lighting: true
   });
 
-  // Simulate real-time data updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setSensorData(prev => ({
-        temperature: Math.max(18, Math.min(35, prev.temperature + (Math.random() - 0.5) * 0.5)),
-        humidity: Math.max(40, Math.min(90, prev.humidity + (Math.random() - 0.5) * 2)),
-        soilMoisture: Math.max(30, Math.min(100, prev.soilMoisture + (Math.random() - 0.5) * 3)),
-        lightLevel: Math.max(0, Math.min(100, prev.lightLevel + (Math.random() - 0.5) * 5)),
-        pestDetection: Math.random() > 0.8 ? 'High' : Math.random() > 0.6 ? 'Medium' : 'Low'
-      }));
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, []);
+  // Legacy format for existing components
+  const legacySensorData = {
+    temperature,
+    humidity,
+    soilMoisture,
+    lightLevel,
+    pestDetection
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50">
@@ -71,10 +71,20 @@ const Index = () => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300">
-                <CheckCircle className="h-3 w-3 mr-1" />
-                System Online
+              <Badge variant="outline" className={`${
+                isConnected 
+                  ? 'bg-green-100 text-green-700 border-green-300' 
+                  : 'bg-red-100 text-red-700 border-red-300'
+              }`}>
+                {isConnected ? <Wifi className="h-3 w-3 mr-1" /> : <WifiOff className="h-3 w-3 mr-1" />}
+                {isConnected ? 'Demo Mode Active' : 'Disconnected'}
               </Badge>
+              {lastUpdated && (
+                <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300">
+                  <Calendar className="h-3 w-3 mr-1" />
+                  {lastUpdated.toLocaleTimeString()}
+                </Badge>
+              )}
               <Button variant="outline" size="sm">
                 <Settings className="h-4 w-4 mr-2" />
                 Settings
@@ -85,6 +95,24 @@ const Index = () => {
       </header>
 
       <div className="container mx-auto px-6 py-8">
+        {/* Demo Mode Notice */}
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center space-x-2">
+            <Lightbulb className="h-5 w-5 text-blue-600" />
+            <div>
+              <h3 className="font-semibold text-blue-800">Demo Mode</h3>
+              <p className="text-sm text-blue-600">
+                Displaying simulated sensor data with realistic daily patterns. 
+                {sensorData && (
+                  <span className="ml-2 font-mono">
+                    Device: {sensorData.deviceId} | pH: {sensorData.ph} | CO₂: {sensorData.co2Level} ppm
+                  </span>
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+
         <Tabs defaultValue="dashboard" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4 bg-white/50 backdrop-blur-sm">
             <TabsTrigger value="dashboard" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">
@@ -106,30 +134,30 @@ const Index = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <SensorCard
                 title="Temperature"
-                value={`${sensorData.temperature.toFixed(1)}°C`}
+                value={`${temperature.toFixed(1)}°C`}
                 icon={<Thermometer className="h-5 w-5" />}
-                status={sensorData.temperature > 30 ? 'warning' : 'normal'}
+                status={temperature > 30 ? 'warning' : temperature < 18 ? 'critical' : 'normal'}
                 optimal="20-26°C"
               />
               <SensorCard
                 title="Humidity"
-                value={`${sensorData.humidity.toFixed(0)}%`}
+                value={`${humidity.toFixed(0)}%`}
                 icon={<Droplets className="h-5 w-5" />}
-                status={sensorData.humidity < 50 ? 'warning' : 'normal'}
+                status={humidity < 50 || humidity > 80 ? 'warning' : 'normal'}
                 optimal="60-70%"
               />
               <SensorCard
                 title="Soil Moisture"
-                value={`${sensorData.soilMoisture.toFixed(0)}%`}
+                value={`${soilMoisture.toFixed(0)}%`}
                 icon={<Sprout className="h-5 w-5" />}
-                status={sensorData.soilMoisture < 40 ? 'critical' : 'normal'}
+                status={soilMoisture < 40 ? 'critical' : soilMoisture < 60 ? 'warning' : 'normal'}
                 optimal="70-80%"
               />
               <SensorCard
                 title="Light Level"
-                value={`${sensorData.lightLevel.toFixed(0)}%`}
+                value={`${lightLevel.toFixed(0)}%`}
                 icon={<Sun className="h-5 w-5" />}
-                status={sensorData.lightLevel < 40 ? 'warning' : 'normal'}
+                status={lightLevel < 40 ? 'warning' : 'normal'}
                 optimal="80-90%"
               />
             </div>
@@ -148,9 +176,17 @@ const Index = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="text-sm font-medium text-gray-700">Overall Health</span>
-                      <span className="text-sm text-green-600">92%</span>
+                      <span className="text-sm text-green-600">
+                        {Math.round((temperature > 18 && temperature < 30 ? 25 : 0) + 
+                                   (humidity >= 50 && humidity <= 80 ? 25 : 0) + 
+                                   (soilMoisture >= 40 ? 25 : 0) + 
+                                   (lightLevel >= 40 ? 25 : 0))}%
+                      </span>
                     </div>
-                    <Progress value={92} className="h-2" />
+                    <Progress value={Math.round((temperature > 18 && temperature < 30 ? 25 : 0) + 
+                                                (humidity >= 50 && humidity <= 80 ? 25 : 0) + 
+                                                (soilMoisture >= 40 ? 25 : 0) + 
+                                                (lightLevel >= 40 ? 25 : 0))} className="h-2" />
                   </div>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
@@ -175,16 +211,16 @@ const Index = () => {
             <AutomationControls 
               automationStatus={automationStatus}
               setAutomationStatus={setAutomationStatus}
-              sensorData={sensorData}
+              sensorData={legacySensorData}
             />
           </TabsContent>
 
           <TabsContent value="guidance">
-            <GuidanceDashboard sensorData={sensorData} />
+            <GuidanceDashboard sensorData={legacySensorData} />
           </TabsContent>
 
           <TabsContent value="alerts">
-            <AlertsPanel sensorData={sensorData} />
+            <AlertsPanel sensorData={legacySensorData} />
           </TabsContent>
         </Tabs>
       </div>
