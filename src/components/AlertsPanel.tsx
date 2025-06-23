@@ -11,6 +11,7 @@ import {
   X,
   Clock
 } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
 
 interface AlertsPanelProps {
   sensorData: {
@@ -23,6 +24,8 @@ interface AlertsPanelProps {
 }
 
 const AlertsPanel = ({ sensorData }: AlertsPanelProps) => {
+  const { toast } = useToast();
+
   const generateAlerts = () => {
     const alerts = [];
     
@@ -30,10 +33,12 @@ const AlertsPanel = ({ sensorData }: AlertsPanelProps) => {
       alerts.push({
         id: 1,
         type: 'critical',
-        title: 'Low Soil Moisture',
-        message: `Soil moisture is at ${sensorData.soilMoisture.toFixed(0)}%. Immediate watering required.`,
+        title: 'Critical Soil Moisture - Zone A',
+        message: `Tomato plants in Zone A showing stress. Soil moisture at ${sensorData.soilMoisture.toFixed(0)}%. Immediate watering required to prevent wilting.`,
         time: '2 minutes ago',
-        action: 'Water Now'
+        action: 'Water Zone A',
+        zone: 'Zone A',
+        plant: 'Tomatoes'
       });
     }
 
@@ -41,10 +46,12 @@ const AlertsPanel = ({ sensorData }: AlertsPanelProps) => {
       alerts.push({
         id: 2,
         type: 'warning',
-        title: 'High Temperature',
-        message: `Temperature is ${sensorData.temperature.toFixed(1)}°C. Consider increasing ventilation.`,
+        title: 'High Temperature - Zone B',
+        message: `Lettuce crops in Zone B experiencing heat stress at ${sensorData.temperature.toFixed(1)}°C. Recommended maximum is 25°C for leafy greens.`,
         time: '5 minutes ago',
-        action: 'Cool Down'
+        action: 'Cool Zone B',
+        zone: 'Zone B',
+        plant: 'Lettuce'
       });
     }
 
@@ -52,10 +59,12 @@ const AlertsPanel = ({ sensorData }: AlertsPanelProps) => {
       alerts.push({
         id: 3,
         type: 'critical',
-        title: 'Pest Detection Alert',
-        message: 'High pest activity detected in greenhouse zone 2. Immediate attention required.',
+        title: 'Pest Alert - Zone C Peppers',
+        message: 'Aphid infestation detected on pepper plants in Zone C. Visual inspection confirmed on 8 plants. Immediate organic treatment recommended.',
         time: '10 minutes ago',
-        action: 'Inspect & Treat'
+        action: 'Treat Zone C',
+        zone: 'Zone C',
+        plant: 'Peppers'
       });
     }
 
@@ -63,36 +72,56 @@ const AlertsPanel = ({ sensorData }: AlertsPanelProps) => {
       alerts.push({
         id: 4,
         type: 'info',
-        title: 'Low Light Levels',
-        message: `Light level is ${sensorData.lightLevel.toFixed(0)}%. Supplemental lighting recommended.`,
+        title: 'Low Light - Zone D Herbs',
+        message: `Basil and parsley in Zone D receiving only ${sensorData.lightLevel.toFixed(0)}% optimal light. Growth rate may be reduced without supplemental lighting.`,
         time: '15 minutes ago',
-        action: 'Turn On Lights'
+        action: 'Adjust Zone D Lights',
+        zone: 'Zone D',
+        plant: 'Herbs'
       });
     }
 
-    // Add some system notifications
+    // Add zone-specific system notifications
     alerts.push({
       id: 5,
       type: 'success',
-      title: 'Irrigation Completed',
-      message: 'Automated watering cycle completed successfully in zone 1.',
+      title: 'Irrigation Completed - Zone A',
+      message: 'Automated drip irrigation delivered 2.3L to 12 tomato plants in Zone A. Soil moisture increased from 35% to 78%.',
       time: '1 hour ago',
-      action: 'View Report'
+      action: 'View Details',
+      zone: 'Zone A',
+      plant: 'Tomatoes'
     });
 
     alerts.push({
       id: 6,
       type: 'info',
-      title: 'Scheduled Maintenance',
-      message: 'Weekly system check scheduled for tomorrow at 9:00 AM.',
+      title: 'Scheduled Harvest - Zone B',
+      message: 'Outer lettuce leaves in Zone B ready for harvest. 6 plants showing optimal leaf size and color.',
       time: '2 hours ago',
-      action: 'Reschedule'
+      action: 'Schedule Harvest',
+      zone: 'Zone B',
+      plant: 'Lettuce'
     });
 
     return alerts;
   };
 
   const alerts = generateAlerts();
+
+  const handleAlertAction = (alert: any) => {
+    toast({
+      title: `${alert.action} Initiated`,
+      description: `Action for ${alert.plant} in ${alert.zone} has been started.`,
+    });
+  };
+
+  const dismissAlert = (alertId: number) => {
+    toast({
+      title: "Alert Dismissed",
+      description: "Alert has been marked as resolved.",
+    });
+  };
 
   const getAlertIcon = (type: string) => {
     switch (type) {
@@ -143,7 +172,7 @@ const AlertsPanel = ({ sensorData }: AlertsPanelProps) => {
             <span>Alert Center</span>
           </CardTitle>
           <CardDescription>
-            Real-time notifications and system alerts
+            Zone-specific notifications and plant health alerts
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -179,9 +208,9 @@ const AlertsPanel = ({ sensorData }: AlertsPanelProps) => {
       {/* Active Alerts */}
       <Card className="bg-white/80 backdrop-blur-sm border-green-200">
         <CardHeader>
-          <CardTitle className="text-green-800">Active Alerts</CardTitle>
+          <CardTitle className="text-green-800">Active Alerts by Zone</CardTitle>
           <CardDescription>
-            Recent notifications requiring your attention
+            Plant-specific notifications requiring your attention
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -199,6 +228,16 @@ const AlertsPanel = ({ sensorData }: AlertsPanelProps) => {
                       <Badge variant="outline" className={getBadgeColor(alert.type)}>
                         {alert.type}
                       </Badge>
+                      {alert.zone && (
+                        <Badge variant="outline" className="bg-gray-100 text-gray-700">
+                          {alert.zone}
+                        </Badge>
+                      )}
+                      {alert.plant && (
+                        <Badge variant="outline" className="bg-green-100 text-green-700">
+                          {alert.plant}
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-sm text-gray-600 mb-2">{alert.message}</p>
                     <div className="flex items-center space-x-4">
@@ -206,13 +245,22 @@ const AlertsPanel = ({ sensorData }: AlertsPanelProps) => {
                         <Clock className="h-3 w-3" />
                         <span>{alert.time}</span>
                       </div>
-                      <Button size="sm" variant="outline" className="text-xs">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="text-xs"
+                        onClick={() => handleAlertAction(alert)}
+                      >
                         {alert.action}
                       </Button>
                     </div>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => dismissAlert(alert.id)}
+                >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
@@ -221,32 +269,36 @@ const AlertsPanel = ({ sensorData }: AlertsPanelProps) => {
         </CardContent>
       </Card>
 
-      {/* Notification Settings */}
+      {/* Zone Overview */}
       <Card className="bg-white/80 backdrop-blur-sm border-green-200">
         <CardHeader>
-          <CardTitle className="text-green-800">Notification Settings</CardTitle>
+          <CardTitle className="text-green-800">Zone Status Overview</CardTitle>
           <CardDescription>
-            Customize how you receive alerts and notifications
+            Current status of all greenhouse zones
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Button variant="outline" className="justify-start">
-              <Bell className="h-4 w-4 mr-2" />
-              Email Notifications
-            </Button>
-            <Button variant="outline" className="justify-start">
-              <Bell className="h-4 w-4 mr-2" />
-              SMS Alerts
-            </Button>
-            <Button variant="outline" className="justify-start">
-              <Bell className="h-4 w-4 mr-2" />
-              Push Notifications
-            </Button>
-            <Button variant="outline" className="justify-start">
-              <Bell className="h-4 w-4 mr-2" />
-              Alert Thresholds
-            </Button>
+            <div className="p-3 border rounded-lg">
+              <h4 className="font-medium mb-2">Zone A - Tomatoes</h4>
+              <div className="text-sm text-gray-600">12 plants • Last watered: 1h ago</div>
+              <Badge className="mt-1 bg-red-100 text-red-700">Needs Attention</Badge>
+            </div>
+            <div className="p-3 border rounded-lg">
+              <h4 className="font-medium mb-2">Zone B - Lettuce</h4>
+              <div className="text-sm text-gray-600">18 plants • Harvest ready: 6 plants</div>
+              <Badge className="mt-1 bg-yellow-100 text-yellow-700">Monitor Temperature</Badge>
+            </div>
+            <div className="p-3 border rounded-lg">
+              <h4 className="font-medium mb-2">Zone C - Peppers</h4>
+              <div className="text-sm text-gray-600">8 plants • Pest treatment needed</div>
+              <Badge className="mt-1 bg-red-100 text-red-700">Critical</Badge>
+            </div>
+            <div className="p-3 border rounded-lg">
+              <h4 className="font-medium mb-2">Zone D - Herbs</h4>
+              <div className="text-sm text-gray-600">15 plants • Light supplement active</div>
+              <Badge className="mt-1 bg-green-100 text-green-700">Healthy</Badge>
+            </div>
           </div>
         </CardContent>
       </Card>

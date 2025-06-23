@@ -34,14 +34,21 @@ interface AutomationControlsProps {
     lightLevel: number;
     pestDetection: string;
   };
+  onManualAction?: (action: string) => void;
 }
 
-const AutomationControls = ({ automationStatus, setAutomationStatus, sensorData }: AutomationControlsProps) => {
+const AutomationControls = ({ automationStatus, setAutomationStatus, sensorData, onManualAction }: AutomationControlsProps) => {
   const toggleAutomation = (system: keyof typeof automationStatus) => {
     setAutomationStatus(prev => ({
       ...prev,
       [system]: !prev[system]
     }));
+  };
+
+  const handleManualAction = (action: string) => {
+    if (onManualAction) {
+      onManualAction(action);
+    }
   };
 
   const automationSystems = [
@@ -51,7 +58,7 @@ const AutomationControls = ({ automationStatus, setAutomationStatus, sensorData 
       description: 'AI-powered watering based on soil moisture and weather',
       icon: <Droplets className="h-5 w-5" />,
       active: automationStatus.irrigation,
-      status: sensorData.soilMoisture < 40 ? 'Active - Watering' : 'Monitoring',
+      status: sensorData.soilMoisture < 40 ? 'Active - Watering Zone A' : 'Monitoring All Zones',
       color: sensorData.soilMoisture < 40 ? 'text-blue-600' : 'text-green-600'
     },
     {
@@ -60,7 +67,7 @@ const AutomationControls = ({ automationStatus, setAutomationStatus, sensorData 
       description: 'Automatic temperature and humidity regulation',
       icon: <Fan className="h-5 w-5" />,
       active: automationStatus.ventilation,
-      status: sensorData.temperature > 26 ? 'Active - Cooling' : 'Standby',
+      status: sensorData.temperature > 26 ? 'Active - Cooling Zone B' : 'Optimal Temperature',
       color: sensorData.temperature > 26 ? 'text-blue-600' : 'text-green-600'
     },
     {
@@ -69,7 +76,7 @@ const AutomationControls = ({ automationStatus, setAutomationStatus, sensorData 
       description: 'AI detection and targeted pest control measures',
       icon: <Bug className="h-5 w-5" />,
       active: automationStatus.pestControl,
-      status: sensorData.pestDetection === 'High' ? 'Active - Treatment' : 'Monitoring',
+      status: sensorData.pestDetection === 'High' ? 'Active - Treating Zone C' : 'Monitoring All Areas',
       color: sensorData.pestDetection === 'High' ? 'text-red-600' : 'text-green-600'
     },
     {
@@ -78,7 +85,7 @@ const AutomationControls = ({ automationStatus, setAutomationStatus, sensorData 
       description: 'Automated grow lights based on natural light levels',
       icon: <Sun className="h-5 w-5" />,
       active: automationStatus.lighting,
-      status: sensorData.lightLevel < 50 ? 'Active - Supplementing' : 'Natural Light',
+      status: sensorData.lightLevel < 50 ? 'Active - Supplementing Zone D' : 'Natural Light Sufficient',
       color: sensorData.lightLevel < 50 ? 'text-yellow-600' : 'text-green-600'
     }
   ];
@@ -143,21 +150,37 @@ const AutomationControls = ({ automationStatus, setAutomationStatus, sensorData 
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button variant="outline" className="h-20 flex-col space-y-2">
+            <Button 
+              variant="outline" 
+              className="h-20 flex-col space-y-2"
+              onClick={() => handleManualAction('Water Zone A')}
+            >
               <Droplets className="h-5 w-5" />
-              <span className="text-sm">Water Now</span>
+              <span className="text-sm">Water Zone A</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
+            <Button 
+              variant="outline" 
+              className="h-20 flex-col space-y-2"
+              onClick={() => handleManualAction('Ventilate Zone B')}
+            >
               <Fan className="h-5 w-5" />
-              <span className="text-sm">Ventilate</span>
+              <span className="text-sm">Ventilate Zone B</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
+            <Button 
+              variant="outline" 
+              className="h-20 flex-col space-y-2"
+              onClick={() => handleManualAction('Pest Spray Zone C')}
+            >
               <Bug className="h-5 w-5" />
-              <span className="text-sm">Pest Spray</span>
+              <span className="text-sm">Spray Zone C</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
+            <Button 
+              variant="outline" 
+              className="h-20 flex-col space-y-2"
+              onClick={() => handleManualAction('Lights Zone D')}
+            >
               <Sun className="h-5 w-5" />
-              <span className="text-sm">Lights On</span>
+              <span className="text-sm">Lights Zone D</span>
             </Button>
           </div>
         </CardContent>

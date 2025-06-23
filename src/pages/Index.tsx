@@ -21,6 +21,8 @@ import {
   Wifi,
   WifiOff
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useToast } from "@/hooks/use-toast";
 import SensorCard from '../components/SensorCard';
 import AutomationControls from '../components/AutomationControls';
 import GuidanceDashboard from '../components/GuidanceDashboard';
@@ -28,6 +30,7 @@ import AlertsPanel from '../components/AlertsPanel';
 import { useDemoSensorData } from '../hooks/useDemoSensorData';
 
 const Index = () => {
+  const { toast } = useToast();
   const { 
     sensorData, 
     isConnected, 
@@ -37,7 +40,7 @@ const Index = () => {
     soilMoisture,
     lightLevel,
     pestDetection
-  } = useDemoSensorData(3000); // Update every 3 seconds
+  } = useDemoSensorData(3000);
 
   const [automationStatus, setAutomationStatus] = useState({
     irrigation: true,
@@ -46,13 +49,19 @@ const Index = () => {
     lighting: true
   });
 
-  // Legacy format for existing components
   const legacySensorData = {
     temperature,
     humidity,
     soilMoisture,
     lightLevel,
     pestDetection
+  };
+
+  const handleManualAction = (action: string) => {
+    toast({
+      title: `${action} Activated`,
+      description: `Manual ${action.toLowerCase()} has been triggered successfully.`,
+    });
   };
 
   return (
@@ -85,10 +94,18 @@ const Index = () => {
                   {lastUpdated.toLocaleTimeString()}
                 </Badge>
               )}
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </Button>
+              <Link to="/reports">
+                <Button variant="outline" size="sm">
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  Reports
+                </Button>
+              </Link>
+              <Link to="/settings">
+                <Button variant="outline" size="sm">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -212,6 +229,7 @@ const Index = () => {
               automationStatus={automationStatus}
               setAutomationStatus={setAutomationStatus}
               sensorData={legacySensorData}
+              onManualAction={handleManualAction}
             />
           </TabsContent>
 
