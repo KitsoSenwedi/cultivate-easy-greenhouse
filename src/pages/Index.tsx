@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +18,9 @@ import {
   Lightbulb,
   Settings,
   Wifi,
-  WifiOff
+  WifiOff,
+  Database,
+  Upload
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
@@ -27,7 +28,9 @@ import SensorCard from '../components/SensorCard';
 import AutomationControls from '../components/AutomationControls';
 import GuidanceDashboard from '../components/GuidanceDashboard';
 import AlertsPanel from '../components/AlertsPanel';
+import AWSConfigModal from '../components/AWSConfigModal';
 import { useDemoSensorData } from '../hooks/useDemoSensorData';
+import { useAWSIntegration } from '../hooks/useAWSIntegration';
 
 const Index = () => {
   const { toast } = useToast();
@@ -42,12 +45,28 @@ const Index = () => {
     pestDetection
   } = useDemoSensorData(3000);
 
+  const {
+    isConfigured: awsConfigured,
+    isUploading,
+    uploadCount,
+    uploadSensorData
+  } = useAWSIntegration();
+
   const [automationStatus, setAutomationStatus] = useState({
     irrigation: true,
     ventilation: true,
     pestControl: false,
     lighting: true
   });
+
+  const [showAWSConfig, setShowAWSConfig] = useState(false);
+
+  // Upload sensor data to AWS when new data arrives
+  React.useEffect(() => {
+    if (sensorData && awsConfigured) {
+      uploadSensorData(sensorData);
+    }
+  }, [sensorData, awsConfigured, uploadSensorData]);
 
   const legacySensorData = {
     temperature,
@@ -88,12 +107,30 @@ const Index = () => {
                 {isConnected ? <Wifi className="h-3 w-3 mr-1" /> : <WifiOff className="h-3 w-3 mr-1" />}
                 {isConnected ? 'Demo Mode Active' : 'Disconnected'}
               </Badge>
+              
+              {/* AWS Status Badge */}
+              <Badge variant="outline" className={`${
+                awsConfigured 
+                  ? 'bg-blue-100 text-blue-700 border-blue-300' 
+                  : 'bg-gray-100 text-gray-700 border-gray-300'
+              }`}>
+                <Database className="h-3 w-3 mr-1" />
+                {awsConfigured ? `AWS: ${uploadCount} uploaded` : 'AWS: Not configured'}
+              </Badge>
+
               {lastUpdated && (
                 <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300">
                   <Calendar className="h-3 w-3 mr-1" />
                   {lastUpdated.toLocaleTimeString()}
                 </Badge>
               )}
+
+              {/* AWS Config Button */}
+              <Button variant="outline" size="sm" onClick={() => setShowAWSConfig(true)}>
+                <Database className="h-4 w-4 mr-2" />
+                AWS Setup
+              </Button>
+
               <Link to="/reports">
                 <Button variant="outline" size="sm">
                   <TrendingUp className="h-4 w-4 mr-2" />
@@ -114,19 +151,31 @@ const Index = () => {
       <div className="container mx-auto px-6 py-8">
         {/* Demo Mode Notice */}
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center space-x-2">
-            <Lightbulb className="h-5 w-5 text-blue-600" />
-            <div>
-              <h3 className="font-semibold text-blue-800">Demo Mode</h3>
-              <p className="text-sm text-blue-600">
-                Displaying simulated sensor data with realistic daily patterns. 
-                {sensorData && (
-                  <span className="ml-2 font-mono">
-                    Device: {sensorData.deviceId} | pH: {sensorData.ph} | CO₂: {sensorData.co2Level} ppm
-                  </span>
-                )}
-              </p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Lightbulb className="h-5 w-5 text-blue-600" />
+              <div>
+                <h3 className="font-semibold text-blue-800">Demo Mode</h3>
+                <p className="text-sm text-blue-600">
+                  Displaying simulated sensor data with realistic daily patterns. 
+                  {sensorData && (
+                    <span className="ml-2 font-mono">
+                      Device: {sensorData.deviceId} | pH: {sensorData.ph} | CO₂: {sensorData.co2Level} ppm
+                    </span>
+                  )}
+                </p>
+              </div>
             </div>
+            
+            {/* AWS Upload Status */}
+            {awsConfigured && (
+              <div className="flex items-center space-x-2">
+                {isUploading && <Upload className="h-4 w-4 text-blue-600 animate-pulse" />}
+                <span className="text-sm text-blue-600">
+                  {isUploading ? 'Uploading to AWS...' : `${uploadCount} readings uploaded`}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -242,6 +291,12 @@ const Index = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* AWS Configuration Modal */}
+      <AWSConfigModal 
+        open={showAWSConfig} 
+        onOpenChange={setShowAWSConfig}
+      />
     </div>
   );
 };
